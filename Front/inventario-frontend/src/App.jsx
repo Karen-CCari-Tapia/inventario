@@ -1,40 +1,45 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { QrReader } from 'react-qr-reader';
+import { useState } from "react";
+import axios from "axios";
+import BarcodeScannerComponent from "react-qr-barcode-scanner";
 
 export default function App() {
-  const [qr, setQr] = useState('');
-  const [precioVenta, setPrecioVenta] = useState('');
-  const [modo, setModo] = useState('ingreso'); 
-  const [mensaje, setMensaje] = useState('');
+  const [qr, setQr] = useState("");
+  const [precioVenta, setPrecioVenta] = useState("");
+  const [modo, setModo] = useState("ingreso");
+  const [mensaje, setMensaje] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensaje('');
+    setMensaje("");
 
     try {
-      if (modo === 'ingreso') {
-        const res = await axios.post('http://localhost:8080/api/productos/ingresoqr', {
-          qr,
-        });
+      if (modo === "ingreso") {
+        const res = await axios.post(
+          "http://localhost:8080/api/productos/ingresoqr",
+          { qr }
+        );
         setMensaje(res.data);
       } else {
-        const partes = qr.split(',');
+        const partes = qr.split(",");
         if (partes.length !== 3) {
-          setMensaje('Formato QR inválido. Debe tener código, descripción, precio');
+          setMensaje(
+            "Formato QR inválido. Debe tener código, descripción, precio"
+          );
           return;
         }
 
-        
-
-        const res = await axios.post('http://localhost:8080/api/productos/salidaqr', {
-          qr,
-          precioVenta: parseFloat(precioVenta)
-        });
+        const res = await axios.post(
+          "http://localhost:8080/api/productos/salidaqr",
+          {
+            qr,
+            precioVenta: parseFloat(precioVenta),
+          }
+        );
         setMensaje(res.data);
       }
     } catch (error) {
-      setMensaje('Error: ' + (error.response?.data || error.message));
+      console.error(error);
+      setMensaje("Error: " + (error.response?.data || error.message));
     }
   };
 
@@ -42,37 +47,53 @@ export default function App() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-100">
       <h1 className="text-2xl font-bold mb-4">Gestor de Inventario con QR</h1>
 
+      {/* Botones de modo */}
       <div className="mb-4">
         <button
-          className={`px-4 py-2 rounded-l ${modo === 'ingreso' ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}
-          onClick={() => setModo('ingreso')}
+          className={`px-4 py-2 rounded-l ${
+            modo === "ingreso"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-300 text-black"
+          }`}
+          onClick={() => setModo("ingreso")}
         >
           Ingreso
         </button>
         <button
-          className={`px-4 py-2 rounded-r ${modo === 'salida' ? 'bg-green-600 text-white' : 'bg-gray-300'}`}
-          onClick={() => setModo('salida')}
+          className={`px-4 py-2 rounded-r ${
+            modo === "salida"
+              ? "bg-green-600 text-white"
+              : "bg-gray-300 text-black"
+          }`}
+          onClick={() => setModo("salida")}
         >
           Salida
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-full max-w-md">
-        {modo === 'ingreso' && (
+      {/* Formulario */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded shadow-md w-full max-w-md"
+      >
+        {modo === "ingreso" && (
           <div className="mb-4">
-            <QrReader
-              constraints={{ facingMode: 'environment' }}
-              onResult={(result) => {
-                if (result?.text) {
+            <BarcodeScannerComponent
+              width={400}
+              height={300}
+              onUpdate={(err, result) => {
+                if (result) {
                   setQr(result.text);
                 }
               }}
-              style={{ width: '100%' }}
             />
           </div>
         )}
 
-        <label className="block mb-2 font-semibold">Código QR (formato: código, descripción, precio):</label>
+        {/* Campo QR */}
+        <label className="block mb-2 font-semibold">
+          Código QR (formato: código, descripción, precio):
+        </label>
         <input
           type="text"
           className="w-full p-2 border border-gray-300 rounded mb-4"
@@ -81,7 +102,8 @@ export default function App() {
           required
         />
 
-        {modo === 'salida' && (
+        {/* Campo Precio de Venta solo en salida */}
+        {modo === "salida" && (
           <>
             <label className="block mb-2 font-semibold">Precio de Venta:</label>
             <input
@@ -95,11 +117,16 @@ export default function App() {
           </>
         )}
 
-        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        >
           Guardar
         </button>
 
-        {mensaje && <p className="mt-4 text-sm text-center text-red-700">{mensaje}</p>}
+        {mensaje && (
+          <p className="mt-4 text-sm text-center text-red-700">{mensaje}</p>
+        )}
       </form>
     </div>
   );
